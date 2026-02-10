@@ -6,6 +6,9 @@ import services.BranchService;
 import services.StudentService;
 
 import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Scanner;
 
 public class StudentManagementApp {
@@ -28,23 +31,24 @@ public class StudentManagementApp {
             System.out.println("\n─────────────────────────────────────────");
             System.out.println("         MAIN MENU");
             System.out.println("─────────────────────────────────────────");
-            System.out.println("1. Enroll New Student");
-            System.out.println("2. View All Students");
-            System.out.println("3. Search Student by ID");
-            System.out.println("4. Update Student Information");
-            System.out.println("5. Delete Student");
-            System.out.println("6. View All Branches");
-            System.out.println("7. Add New Branch");
-            System.out.println("8. Get Students by Branch");
-            System.out.println("9. Display Statistics");
-            System.out.println("0. Exit Application");
+            System.out.println("1. Add Parttime Student");
+            System.out.println("2. Add Full Time Student");
+            System.out.println("3. Remove Student");
+            System.out.println("4. View Student");
+            System.out.println("5. View Students");
+            System.out.println("6. Sort Date of Joining");
+            System.out.println("7. Sort by ID");
+            System.out.println("8. Sort by First Name");
+            System.out.println("0. Exit");
             System.out.println("─────────────────────────────────────────");
-            System.out.print("Enter your choice (0-9): ");
+            System.out.print("Enter your choice (0-8): ");
             String choice = scanner.nextLine().trim();
 
             switch (choice) {
                 case "1":
-                    System.out.println("\n========== ENROLL NEW STUDENT ==========");
+                case "2":
+                    boolean isPart = choice.equals("1");
+                    System.out.println(isPart ? "\n=== ADD PARTTIME STUDENT ===" : "\n=== ADD FULL TIME STUDENT ===");
                     List<Branch> branches = branchService.getAllBranches();
                     if (branches.isEmpty()) {
                         System.out.println("✗ No branches available!");
@@ -62,7 +66,8 @@ public class StudentManagementApp {
                     try {
                         int bid = Integer.parseInt(scanner.nextLine().trim());
                         if (branchService.getBranchById(bid) != null) {
-                            studentService.enrollStudent(new Student(name, email, phone, bid));
+                            String type = isPart ? "part" : "full";
+                            studentService.enrollStudent(new Student(name, email, phone, bid, type));
                         } else {
                             System.out.println("✗ Invalid Branch ID!");
                         }
@@ -71,63 +76,12 @@ public class StudentManagementApp {
                     }
                     break;
 
-                case "2":
-                    System.out.println("\n========== ALL STUDENTS ==========");
-                    List<Student> students = studentService.getAllStudents();
-                    if (students.isEmpty()) {
-                        System.out.println("✗ No students found!");
-                    } else {
-                        System.out.println("\nTotal: " + students.size() + "\n");
-                        for (Student s : students) System.out.println(s);
-                    }
-                    break;
-
                 case "3":
-                    System.out.println("\n========== SEARCH STUDENT ==========");
+                    System.out.println("\n=== REMOVE STUDENT ===");
                     System.out.print("Enter Student ID: ");
                     try {
-                        Student s = studentService.getStudentById(Integer.parseInt(scanner.nextLine().trim()));
-                        if (s != null) {
-                            System.out.println("\n✓ Student Found:");
-                            System.out.println(s);
-                        } else {
-                            System.out.println("✗ Student not found!");
-                        }
-                    } catch (NumberFormatException e) {
-                        System.out.println("✗ Invalid input!");
-                    }
-                    break;
-
-                case "4":
-                    System.out.println("\n========== UPDATE STUDENT ==========");
-                    System.out.print("Enter Student ID: ");
-                    try {
-                        Student s = studentService.getStudentById(Integer.parseInt(scanner.nextLine().trim()));
-                        if (s != null) {
-                            System.out.println("Current: " + s);
-                            System.out.print("New Name (or press Enter): ");
-                            String newName = scanner.nextLine().trim();
-                            if (!newName.isEmpty()) s.setStudentName(newName);
-                            System.out.print("New Email (or press Enter): ");
-                            String newEmail = scanner.nextLine().trim();
-                            if (!newEmail.isEmpty()) s.setEmail(newEmail);
-                            System.out.print("New Phone (or press Enter): ");
-                            String newPhone = scanner.nextLine().trim();
-                            if (!newPhone.isEmpty()) s.setPhone(newPhone);
-                            studentService.updateStudent(s);
-                        } else {
-                            System.out.println("✗ Student not found!");
-                        }
-                    } catch (NumberFormatException e) {
-                        System.out.println("✗ Invalid input!");
-                    }
-                    break;
-
-                case "5":
-                    System.out.println("\n========== DELETE STUDENT ==========");
-                    System.out.print("Enter Student ID: ");
-                    try {
-                        Student s = studentService.getStudentById(Integer.parseInt(scanner.nextLine().trim()));
+                        int sid = Integer.parseInt(scanner.nextLine().trim());
+                        Student s = studentService.getStudentById(sid);
                         if (s != null) {
                             System.out.println("Confirm deletion: " + s);
                             System.out.print("Are you sure? (yes/no): ");
@@ -144,67 +98,53 @@ public class StudentManagementApp {
                     }
                     break;
 
-                case "6":
-                    System.out.println("\n========== ALL BRANCHES ==========");
-                    List<Branch> allBranches = branchService.getAllBranches();
-                    if (allBranches.isEmpty()) {
-                        System.out.println("✗ No branches found!");
-                    } else {
-                        System.out.println("\nTotal: " + allBranches.size() + "\n");
-                        for (Branch b : allBranches) System.out.println(b);
-                    }
-                    break;
-
-                case "7":
-                    System.out.println("\n========== ADD NEW BRANCH ==========");
-                    System.out.print("Enter Branch Name: ");
-                    String bname = scanner.nextLine().trim();
-                    System.out.print("Enter Branch Code: ");
-                    String bcode = scanner.nextLine().trim();
-                    branchService.addBranch(new Branch(bname, bcode));
-                    break;
-
-                case "8":
-                    System.out.println("\n========== STUDENTS BY BRANCH ==========");
-                    List<Branch> blist = branchService.getAllBranches();
-                    if (blist.isEmpty()) {
-                        System.out.println("✗ No branches available!");
-                        break;
-                    }
-                    System.out.println("Available Branches:");
-                    for (Branch b : blist) System.out.println(b);
-                    System.out.print("\nEnter Branch ID: ");
+                case "4":
+                    System.out.println("\n=== VIEW STUDENT ===");
+                    System.out.print("Enter Student ID: ");
                     try {
-                        int bid = Integer.parseInt(scanner.nextLine().trim());
-                        Branch b = branchService.getBranchById(bid);
-                        if (b != null) {
-                            List<Student> bstudents = studentService.getStudentsByBranch(bid);
-                            System.out.println("\n--- Students in " + b.getBranchName() + " ---");
-                            System.out.println("Total: " + bstudents.size());
-                            for (Student s : bstudents) System.out.println(s);
-                        } else {
-                            System.out.println("✗ Branch not found!");
-                        }
+                        int sid = Integer.parseInt(scanner.nextLine().trim());
+                        Student s = studentService.getStudentById(sid);
+                        if (s != null) System.out.println(s); else System.out.println("✗ Student not found!");
                     } catch (NumberFormatException e) {
                         System.out.println("✗ Invalid input!");
                     }
                     break;
 
-                case "9":
-                    System.out.println("\n========== SYSTEM STATISTICS ==========");
-                    System.out.println("Total Students: " + studentService.getTotalStudentCount());
-                    List<Branch> statBranches = branchService.getAllBranches();
-                    System.out.println("Total Branches: " + statBranches.size());
-                    System.out.println("\nStudents per Branch:");
-                    for (Branch b : statBranches) {
-                        int count = studentService.getStudentsByBranch(b.getBranchId()).size();
-                        System.out.println(b.getBranchName() + ": " + count);
+                case "5":
+                    System.out.println("\n=== VIEW STUDENTS ===");
+                    Set<Student> students = studentService.getAllStudents();
+                    if (students.isEmpty()) {
+                        System.out.println("✗ No students found!");
+                    } else {
+                        System.out.println("\nTotal: " + students.size() + "\n");
+                        for (Student st : students) System.out.println(st);
                     }
+                    break;
+
+                case "6":
+                    System.out.println("\n=== SORT BY DATE OF JOINING ===");
+                    List<Student> byDate = new ArrayList<>(studentService.getAllStudents());
+                    byDate.sort(Comparator.comparing(Student::getEnrollmentDate));
+                    for (Student st : byDate) System.out.println(st);
+                    break;
+
+                case "7":
+                    System.out.println("\n=== SORT BY ID ===");
+                    List<Student> byId = new ArrayList<>(studentService.getAllStudents());
+                    byId.sort(Comparator.comparingInt(Student::getStudentId));
+                    for (Student st : byId) System.out.println(st);
+                    break;
+
+                case "8":
+                    System.out.println("\n=== SORT BY FIRST NAME ===");
+                    List<Student> byFirst = new ArrayList<>(studentService.getAllStudents());
+                    byFirst.sort(Comparator.comparing(s -> s.getStudentName().split(" ")[0]));
+                    for (Student st : byFirst) System.out.println(st);
                     break;
 
                 case "0":
                     running = false;
-                    System.out.println("\n✓ Thank you for using Student Management System!");
+                    System.out.println("\n✓ Goodbye!");
                     break;
 
                 default:

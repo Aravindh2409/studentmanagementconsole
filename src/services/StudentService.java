@@ -5,8 +5,8 @@ import models.Student;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class StudentService {
     private Connection conn;
@@ -19,12 +19,13 @@ public class StudentService {
      * Enroll a new student to the database
      */
     public boolean enrollStudent(Student student) {
-        String sql = "INSERT INTO students (student_name, email, phone, branch_id) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO students (student_name, email, phone, branch_id, student_type) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, student.getStudentName());
             pstmt.setString(2, student.getEmail());
             pstmt.setString(3, student.getPhone());
             pstmt.setInt(4, student.getBranchId());
+            pstmt.setString(5, student.getStudentType() == null ? "full" : student.getStudentType());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
                 System.out.println("✓ Student enrolled successfully!");
@@ -39,9 +40,9 @@ public class StudentService {
     /**
      * Get all students from the database
      */
-    public List<Student> getAllStudents() {
-        List<Student> students = new ArrayList<>();
-        String sql = "SELECT student_id, student_name, email, phone, branch_id, enrollment_date FROM students";
+    public Set<Student> getAllStudents() {
+        Set<Student> students = new LinkedHashSet<>();
+        String sql = "SELECT student_id, student_name, email, phone, branch_id, student_type, enrollment_date FROM students";
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -51,7 +52,8 @@ public class StudentService {
                 String phone = rs.getString("phone");
                 int branchId = rs.getInt("branch_id");
                 LocalDateTime enrollmentDate = rs.getTimestamp("enrollment_date").toLocalDateTime();
-                students.add(new Student(studentId, studentName, email, phone, branchId, enrollmentDate));
+                String studentType = rs.getString("student_type");
+                students.add(new Student(studentId, studentName, email, phone, branchId, enrollmentDate, studentType));
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving students: " + e.getMessage());
@@ -63,7 +65,7 @@ public class StudentService {
      * Get student by ID
      */
     public Student getStudentById(int studentId) {
-        String sql = "SELECT student_id, student_name, email, phone, branch_id, enrollment_date FROM students WHERE student_id = ?";
+        String sql = "SELECT student_id, student_name, email, phone, branch_id, student_type, enrollment_date FROM students WHERE student_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, studentId);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -74,7 +76,8 @@ public class StudentService {
                             rs.getString("email"),
                             rs.getString("phone"),
                             rs.getInt("branch_id"),
-                            rs.getTimestamp("enrollment_date").toLocalDateTime()
+                            rs.getTimestamp("enrollment_date").toLocalDateTime(),
+                            rs.getString("student_type")
                     );
                 }
             }
@@ -87,9 +90,9 @@ public class StudentService {
     /**
      * Get students by branch ID
      */
-    public List<Student> getStudentsByBranch(int branchId) {
-        List<Student> students = new ArrayList<>();
-        String sql = "SELECT student_id, student_name, email, phone, branch_id, enrollment_date FROM students WHERE branch_id = ?";
+    public Set<Student> getStudentsByBranch(int branchId) {
+        Set<Student> students = new LinkedHashSet<>();
+        String sql = "SELECT student_id, student_name, email, phone, branch_id, student_type, enrollment_date FROM students WHERE branch_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, branchId);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -99,7 +102,8 @@ public class StudentService {
                     String email = rs.getString("email");
                     String phone = rs.getString("phone");
                     LocalDateTime enrollmentDate = rs.getTimestamp("enrollment_date").toLocalDateTime();
-                    students.add(new Student(studentId, studentName, email, phone, branchId, enrollmentDate));
+                    String studentType = rs.getString("student_type");
+                    students.add(new Student(studentId, studentName, email, phone, branchId, enrollmentDate, studentType));
                 }
             }
         } catch (SQLException e) {
@@ -112,13 +116,14 @@ public class StudentService {
      * Update student information
      */
     public boolean updateStudent(Student student) {
-        String sql = "UPDATE students SET student_name = ?, email = ?, phone = ?, branch_id = ? WHERE student_id = ?";
+        String sql = "UPDATE students SET student_name = ?, email = ?, phone = ?, branch_id = ?, student_type = ? WHERE student_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, student.getStudentName());
             pstmt.setString(2, student.getEmail());
             pstmt.setString(3, student.getPhone());
             pstmt.setInt(4, student.getBranchId());
-            pstmt.setInt(5, student.getStudentId());
+            pstmt.setString(5, student.getStudentType() == null ? "full" : student.getStudentType());
+            pstmt.setInt(6, student.getStudentId());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
                 System.out.println("✓ Student updated successfully!");

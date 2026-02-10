@@ -23,17 +23,28 @@ public class DatabaseInitializer {
             System.out.println("✓ Branches table created/verified");
 
             // Create Student table
-            String createStudentTable = "CREATE TABLE IF NOT EXISTS students (" +
+                String createStudentTable = "CREATE TABLE IF NOT EXISTS students (" +
                     "student_id INT AUTO_INCREMENT PRIMARY KEY," +
                     "student_name VARCHAR(100) NOT NULL," +
                     "email VARCHAR(100) UNIQUE," +
                     "phone VARCHAR(15)," +
                     "branch_id INT NOT NULL," +
+                    "student_type VARCHAR(10) NOT NULL DEFAULT 'full'," +
                     "enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                     "FOREIGN KEY(branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE" +
                     ") ENGINE=InnoDB";
             stmt.execute(createStudentTable);
             System.out.println("✓ Students table created/verified");
+
+            // Ensure student_type column exists (for older DBs)
+            if (!columnExists(conn, "students", "student_type")) {
+                try {
+                    stmt.execute("ALTER TABLE students ADD COLUMN student_type VARCHAR(10) NOT NULL DEFAULT 'full'");
+                    System.out.println("✓ student_type column added to students table");
+                } catch (SQLException e) {
+                    System.err.println("Warning: could not add student_type column: " + e.getMessage());
+                }
+            }
 
         } catch (SQLException e) {
             System.err.println("Error initializing tables: " + e.getMessage());
@@ -70,23 +81,37 @@ public class DatabaseInitializer {
                 }
             }
 
-            // Insert students only if none exist
-            try (ResultSet rs2 = stmt.executeQuery("SELECT COUNT(*) as cnt FROM students")) {
-                if (rs2.next() && rs2.getInt("cnt") == 0) {
-                    String[] students = {
-                            "INSERT IGNORE INTO students (student_name, email, phone, branch_id) VALUES ('Raj Kumar', 'raj.kumar@example.com', '9876543210', 1)",
-                            "INSERT IGNORE INTO students (student_name, email, phone, branch_id) VALUES ('Priya Singh', 'priya.singh@example.com', '9876543211', 1)",
-                            "INSERT IGNORE INTO students (student_name, email, phone, branch_id) VALUES ('Amit Patel', 'amit.patel@example.com', '9876543212', 2)",
-                            "INSERT IGNORE INTO students (student_name, email, phone, branch_id) VALUES ('Neha Sharma', 'neha.sharma@example.com', '9876543213', 3)",
-                            "INSERT IGNORE INTO students (student_name, email, phone, branch_id) VALUES ('Vikram Desai', 'vikram.desai@example.com', '9876543214', 4)"
-                    };
-
-                    for (String student : students) {
-                        stmt.execute(student);
-                    }
-                    System.out.println("✓ Sample students inserted");
-                }
+            // Clear and insert fresh students and branches data
+            // Truncate students first (FK to branches), then branches so we keep fresh sample data every run
+            try {
+                stmt.execute("TRUNCATE TABLE students");
+            } catch (SQLException ignore) {
             }
+            try {
+                stmt.execute("TRUNCATE TABLE branches");
+            } catch (SQLException ignore) {
+            }
+
+            // Re-insert branches
+            String[] branches = {
+                    "INSERT IGNORE INTO branches (branch_name, branch_code) VALUES ('Computer Science', 'CS')",
+                    "INSERT IGNORE INTO branches (branch_name, branch_code) VALUES ('Electronics and Communication', 'ECE')",
+                    "INSERT IGNORE INTO branches (branch_name, branch_code) VALUES ('Mechanical Engineering', 'ME')",
+                    "INSERT IGNORE INTO branches (branch_name, branch_code) VALUES ('Civil Engineering', 'CE')",
+                    "INSERT IGNORE INTO branches (branch_name, branch_code) VALUES ('Electrical Engineering', 'EE')"
+            };
+            for (String branch : branches) stmt.execute(branch);
+
+            // Insert fresh students with student_type column
+            String[] students = {
+                    "INSERT IGNORE INTO students (student_name, email, phone, branch_id, student_type) VALUES ('Raj Kumar', 'raj.kumar@example.com', '9876543210', 1, 'full')",
+                    "INSERT IGNORE INTO students (student_name, email, phone, branch_id, student_type) VALUES ('Priya Singh', 'priya.singh@example.com', '9876543211', 1, 'part')",
+                    "INSERT IGNORE INTO students (student_name, email, phone, branch_id, student_type) VALUES ('Amit Patel', 'amit.patel@example.com', '9876543212', 2, 'full')",
+                    "INSERT IGNORE INTO students (student_name, email, phone, branch_id, student_type) VALUES ('Neha Sharma', 'neha.sharma@example.com', '9876543213', 3, 'part')",
+                    "INSERT IGNORE INTO students (student_name, email, phone, branch_id, student_type) VALUES ('Vikram Desai', 'vikram.desai@example.com', '9876543214', 4, 'full')"
+            };
+            for (String student : students) stmt.execute(student);
+            System.out.println("✓ Sample branches and fresh students inserted");
 
         } catch (SQLException e) {
             System.err.println("Error inserting sample data: " + e.getMessage());
@@ -98,6 +123,17 @@ public class DatabaseInitializer {
      */
     private static boolean tableExists(Connection conn, String tableName) {
         try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, new String[]{"TABLE"})) {
+            return rs.next();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if a column exists in a table
+     */
+    private static boolean columnExists(Connection conn, String tableName, String columnName) {
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, tableName, columnName)) {
             return rs.next();
         } catch (SQLException e) {
             return false;

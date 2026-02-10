@@ -2,6 +2,9 @@ package models;
 
 import java.time.LocalDateTime;
 
+/**
+ * StudentType values: "full" or "part"
+ */
 public class Student {
     private int studentId;
     private String studentName;
@@ -9,6 +12,7 @@ public class Student {
     private String phone;
     private int branchId;
     private LocalDateTime enrollmentDate;
+    private String studentType;
 
     /**
      * Constructor with all fields
@@ -20,6 +24,20 @@ public class Student {
         this.phone = phone;
         this.branchId = branchId;
         this.enrollmentDate = enrollmentDate;
+        this.studentType = null; // Default value
+    }
+
+    /**
+     * Constructor with all fields including studentType
+     */
+    public Student(int studentId, String studentName, String email, String phone, int branchId, LocalDateTime enrollmentDate, String studentType) {
+        this.studentId = studentId;
+        this.studentName = studentName;
+        this.email = email;
+        this.phone = phone;
+        this.branchId = branchId;
+        this.enrollmentDate = enrollmentDate;
+        this.studentType = studentType;
     }
 
     /**
@@ -30,6 +48,17 @@ public class Student {
         this.email = email;
         this.phone = phone;
         this.branchId = branchId;
+    }
+
+    /**
+     * Constructor for new student with explicit type
+     */
+    public Student(String studentName, String email, String phone, int branchId, String studentType) {
+        this.studentName = studentName;
+        this.email = email;
+        this.phone = phone;
+        this.branchId = branchId;
+        this.studentType = studentType;
     }
 
     // Getters and Setters
@@ -81,9 +110,18 @@ public class Student {
         this.enrollmentDate = enrollmentDate;
     }
 
+    public String getStudentType() {
+        return studentType;
+    }
+
+    public void setStudentType(String studentType) {
+        this.studentType = studentType;
+    }
+
     @Override
     public String toString() {
-        return String.format("Student ID: %d | Name: %s | Email: %s | Phone: %s | Branch ID: %d",
-                studentId, studentName, email, phone, branchId);
+        return String.format("Student ID: %d | Name: %s | Type: %s | Email: %s | Phone: %s | Branch ID: %d | Joined: %s",
+                studentId, studentName, studentType == null ? "full" : studentType, email, phone, branchId,
+                enrollmentDate == null ? "-" : enrollmentDate.toLocalDate().toString());
     }
 }
